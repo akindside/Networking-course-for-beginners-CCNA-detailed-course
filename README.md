@@ -4,8 +4,3 @@ This repo has a full theoretical and practical journey that I share with you lea
 This repo in under developement, and updates are almost always daily. 
 
 Have fun learning this amazing subject!
-<<<<<<< HEAD
-=======
-
->>>>>>> 88d6aff (Initial commit)
-# Networking-course-for-beginners-CCNA-deailed-course
