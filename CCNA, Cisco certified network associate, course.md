@@ -7,14 +7,8 @@
 
 Networking models, such as [[TCP-IP]] and [[Open Systems Interconnection (OSI)]], serve as the indispensable architectural blueprints for global digital infrastructure. Much as a set of building plans ensures that electricians, plumbers, and framers can work independently yet produce a cohesive structure, networking models provide the standards and protocols necessary for interoperability in global commerce. These frameworks define the **logical rules and physical requirements that allow disparate hardware and software to communicate**, transforming isolated devices into a unified global network.
 
-![[1. Terminology in the learning order of this course#disparate]]
-
-
-
-> [!Vocabulary] disparate :
+> [!Vocab] disparate :
 > essentially different in kind; not able to be compared.
-
-
 
 Historically, the industry underwent a strategic shift from proprietary vendor models—such as [[IBM’s Systems Network Architecture (SNA)]]—to open, vendor-neutral standards. In the 1970s and 80s, proprietary models forced organizations to maintain complex, siloed networks for each vendor's equipment. While the [[International Organization for Standardization (ISO)]] attempted to solve this with the OSI model, TCP/IP emerged as the dominant framework. This outcome was driven by development philosophy: the OSI model suffered from a "standard-first, code-second" approach that struggled in the marketplace, whereas TCP/IP utilized a "code-first, standardize-second" approach led by researchers and volunteers. This practical, implementation-led strategy allowed TCP/IP to become the most pervasive networking model in existence.
 
@@ -67,7 +61,12 @@ This modularity ensures that *each layer performs a specialized task*, creating 
 
 The "User-Facing" layers—Application and Transport—work in tandem **to ensure that data is requested correctly and arrives intact**. The Application layer identifies the *specific service required*, while the Transport layer provides the *underlying reliability for the transfer*.
 
-![[1. Terminology in the learning order of this course#tandem]]
+> [!vocab] tandem :
+> a bicycle with seats and [pedals](https://www.google.com/search?client=firefox-b-d&hs=sF59&sca_esv=ee81a51e8e25352b&channel=entpr&biw=1342&bih=633&sxsrf=ANbL-n5xwyRnjpHL7AHt3tjNU06JLarAtg:1772027792899&q=pedals&si=AL3DRZGftPMu5S1DRQlTjs_j9BL7c0tc4mthrzIAfdjcfAkXE6L6CXPwQ3kGb8IWzEJ_q6Wh9Pf6LsxpTwBbu-VFDQx2ZOCD-w%3D%3D&expnd=1&sa=X&ved=2ahUKEwiq1IL55fSSAxXZnf0HHcsnO-kQyecJegQIHxAQ) for two riders, one behind the other.
+> 
+> ![[Pasted image 20260225145907.png]]
+>
+> So you see that it's **designed to be ridden by two parties**.
 
 The [[Hypertext Transfer Protocol (HTTP)]] utilizes a <u>request/response mechanism</u> to fetch web content. When a browser requests a page, it sends a "GET" command. The server then responds with a return code, such as "200 OK" for success or "404 Not Found" for missing files. To maximize efficiency, HTTP transfers data by sending multiple messages; while the initial message includes the HTTP header, subsequent messages often omit the header to avoid wasting space.
 
@@ -723,3 +722,167 @@ The reliability of a Cisco switching fabric is not accidental; it is a result of
 4. **Monitor Octet Throughput:** Utilize `show interfaces counters` to identify high-bandwidth ports that may require link aggregation (EtherChannel) to prevent congestion.
 
 In summary, the "out-of-the-box" readiness of Cisco Catalyst switches provides immediate connectivity, but true network stability is maintained through the expert-level CLI oversight of the tripartite switching logic.
+
+# Chapter 6 : Basic Switch Management and Security Configuration
+
+Effective network infrastructure starts with a robust management strategy. As a Senior Architect, I cannot overstress that switches are not just transparent bridges; they are managed hosts that require intentional functional separation and layered security. Treating management as an afterthought is a recipe for catastrophic unauthorized access. By implementing a tiered approach—starting with physical console security and moving toward encrypted remote access—you ensure that your infrastructure remains stable and audit-compliant.
+
+## 1. Architectural Foundation: The Three Planes of Switch Operation
+
+To maintain network stability, Cisco IOS logically separates switch operations into three distinct "planes." This separation is strategic: it ensures that high-volume data traffic does not starve the CPU processes required to manage the device or run critical loop-prevention protocols.
+
+- **Data Plane:** This plane performs the "heavy lifting." It is responsible for the actual forwarding of Ethernet frames received by the switch using MAC address table lookups.
+- **Control Plane:** This plane includes the dynamic processes that influence and **program** the Data Plane. Examples include the Spanning Tree Protocol (STP) for loop prevention and speed/duplex negotiation.
+- **Management Plane:** This plane is dedicated to administrative traffic. It handles all features used to manage the device, such as the Command-Line Interface (CLI) via SSH or Telnet, and the WebUI via HTTPS.
+
+### Comparison of Operational Planes
+
+|   |   |   |
+|---|---|---|
+|Plane|Primary Function|Technical Examples|
+|**Data Plane**|Forwarding user traffic|Frame switching, MAC address lookups|
+|**Control Plane**|Managing Data Plane logic|Spanning Tree (STP), Port speed/duplex negotiation|
+|**Management Plane**|Device administration|SSH, HTTPS (WebUI), SNMP, Syslog|
+
+Securing the **Management Plane** is your first line of defense. A compromise here effectively grants an attacker control over the other two planes; once an adversary can modify the configuration or reload the switch, the integrity of the entire network is lost.
+
+--------------------------------------------------------------------------------
+
+## 2. Securing CLI Access: Simple Passwords vs. Local Usernames
+
+The industry has moved decisively away from shared access passwords toward individualized accountability. Legacy shared passwords offer no way to track which technician made a change—a major failure in modern security audits. Every device must transition to unique credentials to maintain a clear audit trail.
+
+### User Mode vs. Privileged Mode
+
+- **User Mode (**`**switch>**`**):** Also called User EXEC mode. It allows limited "show" commands but no configuration changes.
+- **Privileged Mode (**`**switch#**`**):** Also called **Enable Mode**. This is the highest privilege level, granting full control over the configuration and system files.
+
+### Legacy Configuration: Shared Passwords
+
+In a simple setup, a single password is used for all users. Note that for VTY lines, Telnet and SSH will **fail by default** if no login method is configured.
+
+- **Console:** `line con 0` -> `password [value]` -> `login`
+- **Remote (VTY):** `line vty 0 15` -> `password [value]` -> `login`
+- **Enable Mode:** `enable secret [value]`
+
+### Best Practice: Local User Authentication
+
+Migrating to a local database is the architectural standard for standalone or small-scale environments. This allows the switch to challenge users for both a unique username and a password.
+
+**Configuration Snippet: Local User Authentication**
+
+```ios
+! Create local administrative users with encrypted passwords
+username admin01 secret Cisco789
+username net-engineer secret SecurePass123
+
+! Secure the Console line
+line con 0
+ login local
+ no password
+
+! Secure the Remote Access (VTY) lines
+line vty 0 15
+ login local
+ ! Best Practice: Force encrypted protocols only
+ transport input ssh
+ no password
+```
+
+**The "So What?" of Encryption: Secret vs. Password** You must always use the `enable secret` command. While the older `enable password` command stores the value in clear-text (or weak encryption), `enable secret` uses a MD5-based **Type 5 hash**. In the `show running-config` output, a Type 5 hash is unreadable, whereas `enable password` is a significant security liability.
+
+While local databases are a step up, large-scale enterprises eventually move to centralized AAA (Authentication, Authorization, and Accounting) to manage thousands of devices from a single point.
+
+--------------------------------------------------------------------------------
+
+## 3. Enterprise Authentication and Secure Remote Access (SSH & HTTPS)
+
+Clear-text protocols like Telnet and HTTP are forbidden in production environments. Because they transmit data—including passwords—in plain text, they are vulnerable to "man-in-the-middle" captures. Transitioning to SSH and HTTPS is a mandatory security requirement.
+
+### Centralized Management: AAA, RADIUS, and TACACS+
+
+For centralized control, switches utilize **AAA**. Instead of local databases, the switch queries an external AAA server using **RADIUS** or **TACACS+** protocols. These protocols encrypt password exchanges between the switch and the server, allowing for centralized password rotation and immediate revocation of access when a staff member departs.
+
+### Step-by-Step CLI Guide for SSH
+
+SSH requires the switch to have a matched public and private RSA key pair.
+
+1. **Set Hostname:** `hostname SW1`
+2. **Set Domain Name:** `ip domain name example.com`
+    - _Architect's Note:_ The **Fully Qualified Domain Name (FQDN)** (e.g., `SW1.example.com`) is the mandatory input used to generate the RSA key.
+3. **Generate RSA Keys:** `crypto key generate rsa`
+    - Specify a modulus of at least **768 bits** to support SSHv2 (1024 or higher is recommended).
+4. **Force SSH Version 2:** `ip ssh version 2` (Disables the vulnerable version 1).
+5. **Restrict VTY Lines:** Under `line vty 0 15`, apply `transport input ssh` to explicitly block Telnet.
+
+### Securing the WebUI
+
+The WebUI (HTTP server) is often enabled by default. Secure it with these steps:
+
+- **Disable HTTP:** `no ip http server`
+- **Enable HTTPS:** `ip http secure-server`
+- **Set Authentication:** `ip http authentication local`
+- **Assign Privileges:** `username [name] privilege 15 secret [pass]`
+    - _Why Privilege 15?_ Without **Level 15**, the WebUI user cannot access advanced features such as software installation, configuration modes, or reloads.
+
+--------------------------------------------------------------------------------
+
+## 4. Configuring IPv4 Connectivity for the Management Plane
+
+Layer 2 switches do not use IP addresses for forwarding frames, but they require them for "reachability." Without an IP address, the management plane protocols (SSH, SNMP) cannot function across the network.
+
+### The Switch Virtual Interface (SVI)
+
+A switch uses an **SVI** (or **VLAN Interface**) as its "virtual NIC." By default, all ports are in VLAN 1. Assigning an IP to `interface vlan 1` allows the switch to communicate through any physical port assigned to that VLAN.
+
+- **Static IP:** Manually assigned (standard for management).
+- **DHCP IP:** Learned via `ip address dhcp`.
+
+**Critical Operational Insight: The "Up/Up" Requirement** An SVI will remain in a "down/down" state—and thus be unreachable—if there are no active physical ports assigned to that VLAN. You must ensure at least one physical port in the management VLAN is connected to an active device for the SVI to go to an **up/up** status.
+
+### The Default Gateway
+
+The `ip default-gateway` command is the "So What?" of remote routability. In this context, the switch behaves like a **host**. For an administrator on a different subnet to receive SSH responses, the switch must know the local router's IP to send **return traffic** back to the remote subnet.
+
+**Configuration Snippet: Management IP Setup**
+
+```ios
+interface vlan 1
+ ip address 192.168.1.200 255.255.255.0
+ ! Do not forget this command; SVIs are often shut down by default.
+ no shutdown
+exit
+
+! Enable routability to remote subnets
+ip default-gateway 192.168.1.1
+```
+
+--------------------------------------------------------------------------------
+
+## 5. Operational Efficiency: Lab Optimization and Verification
+
+In a lab environment, certain "Quality of Life" settings reduce friction, but you must understand their production risks.
+
+### Essential Efficiency Commands
+
+- `**logging synchronous**`**:** Prevents syslog messages from "chopping up" the command you are currently typing by forcing the prompt to a new line.
+- `**no ip domain-lookup**`**:** Prevents the switch from "hanging" for a minute if you mistype a command (which the switch mistakenly tries to resolve as a DNS hostname).
+- `**history size [number]**`**:** Increases the history buffer so you can use the up-arrow to recall a larger number of previous commands.
+- `**exec-timeout 0 0**`**:** **(LAB ONLY)** Disables the inactivity timer. In production, switches default to a **5-minute timeout** for security; leaving a session open indefinitely is a major physical security risk.
+
+### Verification Checklist
+
+Always verify your configuration with these authoritative commands:
+
+|   |   |
+|---|---|
+|Command|What to Look For|
+|`show ip ssh`|Verify "SSH Enabled - version 2.0".|
+|`show interfaces vlan 1`|Ensure status is "up, line protocol is up." If "administratively down," you missed the `no shutdown` command.|
+|`show ip default-gateway`|Confirm the address matches your local router.|
+|`show dhcp lease`|If using DHCP, check the assigned IP and time remaining.|
+|`show history`|Review recently entered commands for troubleshooting.|
+
+### Summary of Security Hierarchy
+
+Effective switch hardening follows a logical hierarchy: establish **physical console security** with local users, enforce **encrypted remote access** via SSHv2, and ensure **network reachability** using a properly configured SVI and default gateway. Adhering to these standards ensures your infrastructure is both resilient and manageable.
