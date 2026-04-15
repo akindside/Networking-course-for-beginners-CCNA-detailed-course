@@ -754,8 +754,8 @@ The industry has moved decisively away from shared access passwords toward indiv
 
 ### User Mode vs. Privileged Mode
 
-- **User Mode (**`**switch>**`**):** Also called User EXEC mode. It allows limited "show" commands but no configuration changes.
-- **Privileged Mode (**`**switch#**`**):** Also called **Enable Mode**. This is the highest privilege level, granting full control over the configuration and system files.
+- **User Mode (`switch>`):** Also called User EXEC mode. It allows limited "show" commands but no configuration changes.
+- **Privileged Mode (`switch#`):** Also called **Enable Mode**. This is the highest privilege level, granting full control over the configuration and system files.
 
 ### Legacy Configuration: Shared Passwords
 

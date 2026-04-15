@@ -4,12 +4,11 @@ In the architectural hierarchy of a Cisco switch, the **Management Plane** repre
 
 The following table evaluates the attack potential across the functional planes as defined in the source:
 
-|   |   |   |   |
-|---|---|---|---|
-|Switch Plane|Primary Function|Attack Potential|Vulnerability Context|
-|**Data Plane**|Forwarding Ethernet frames.|**Low to Moderate**|Interception or redirection of specific data streams.|
-|**Control Plane**|Logic and Topology (STP, Port Speed/Duplex).|**High/Critical**|Manipulation of Spanning Tree (STP) to cause network-wide instability or loops.|
-|**Management Plane**|Device Management (CLI, SSH, Telnet, WebUI).|**Critical**|Full device compromise, configuration alteration, and administrative lockout.|
+| Switch Plane         | Primary Function                             | Attack Potential    | Vulnerability Context                                                           |
+| -------------------- | -------------------------------------------- | ------------------- | ------------------------------------------------------------------------------- |
+| **Data Plane**       | Forwarding Ethernet frames.                  | **Low to Moderate** | Interception or redirection of specific data streams.                           |
+| **Control Plane**    | Logic and Topology (STP, Port Speed/Duplex). | **High/Critical**   | Manipulation of Spanning Tree (STP) to cause network-wide instability or loops. |
+| **Management Plane** | Device Management (CLI, SSH, Telnet, WebUI). | **Critical**        | Full device compromise, configuration alteration, and administrative lockout.   |
 
 **The "So What?" Factor: Privileged Mode Escalation** Gaining CLI access is only the first step; the true objective is "enable mode" (Privileged EXEC mode/Level 15). Achieving this transforms a minor breach into a catastrophic failure. From a penetration tester's perspective, Level 15 access allows an attacker to "Reload" the switch—a specific tool for Denial of Service (DoS) used to mask exfiltration events or disrupt forensics. It further allows the permanent alteration of configurations to create persistent backdoors or disable security logging entirely.
 
