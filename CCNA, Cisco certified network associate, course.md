@@ -5,12 +5,20 @@
 
 ![[2. Definitions in the learning order of this course#network]]
 
-Networking models, such as [[TCP-IP]] and [[Open Systems Interconnection (OSI)]], serve as the indispensable architectural blueprints for global digital infrastructure. Much as a set of building plans ensures that electricians, plumbers, and framers can work independently yet produce a cohesive structure, networking models provide the standards and protocols necessary for interoperability in global commerce. These frameworks define the **logical rules and physical requirements that allow disparate hardware and software to communicate**, transforming isolated devices into a unified global network.
+[[Networking]] models, such as [[TCP-IP]] and [[Open Systems Interconnection (OSI)]], serve as the indispensable architectural blueprints for global digital infrastructure. Much as a set of building plans ensures that electricians, plumbers, and framers can work independently yet produce a cohesive structure, networking models provide the standards and protocols necessary for interoperability in global commerce. These frameworks define the **logical rules and physical requirements that allow disparate hardware and software to communicate**, transforming isolated devices into a unified global network.
+
+![[1. Terminology in the learning order of this course#tandem]]
 
 > [!Vocab] disparate :
 > essentially different in kind; not able to be compared.
 
 Historically, the industry underwent a strategic shift from proprietary vendor models—such as [[IBM’s Systems Network Architecture (SNA)]]—to open, vendor-neutral standards. In the 1970s and 80s, proprietary models forced organizations to maintain complex, siloed networks for each vendor's equipment. While the [[International Organization for Standardization (ISO)]] attempted to solve this with the OSI model, TCP/IP emerged as the dominant framework. This outcome was driven by development philosophy: the OSI model suffered from a "standard-first, code-second" approach that struggled in the marketplace, whereas TCP/IP utilized a "code-first, standardize-second" approach led by researchers and volunteers. This practical, implementation-led strategy allowed TCP/IP to become the most pervasive networking model in existence.
+
+
+
+> [!vocab] Provenance
+> the place of origin or earliest known history of something.
+
 
 ![[1. Terminology in the learning order of this course#underwent (present to undergo)]]
 
