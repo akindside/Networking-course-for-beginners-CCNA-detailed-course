@@ -3,6 +3,9 @@
 
 ![[1. Terminology in the learning order of this course#Imperative]]
 
+> [!vocab] Imperative :
+> an essential or urgent thing.
+
 ![[2. Definitions in the learning order of this course#network]]
 
 [[Networking]] models, such as [[TCP-IP]] and [[Open Systems Interconnection (OSI)]], serve as the indispensable architectural blueprints for global digital infrastructure. Much as a set of building plans ensures that electricians, plumbers, and framers can work independently yet produce a cohesive structure, networking models provide the standards and protocols necessary for interoperability in global commerce. These frameworks define the **logical rules and physical requirements that allow disparate hardware and software to communicate**, transforming isolated devices into a unified global network.
@@ -13,8 +16,6 @@
 > essentially different in kind; not able to be compared.
 
 Historically, the industry underwent a strategic shift from proprietary vendor models—such as [[IBM’s Systems Network Architecture (SNA)]]—to open, vendor-neutral standards. In the 1970s and 80s, proprietary models forced organizations to maintain complex, siloed networks for each vendor's equipment. While the [[International Organization for Standardization (ISO)]] attempted to solve this with the OSI model, TCP/IP emerged as the dominant framework. This outcome was driven by development philosophy: the OSI model suffered from a "standard-first, code-second" approach that struggled in the marketplace, whereas TCP/IP utilized a "code-first, standardize-second" approach led by researchers and volunteers. This practical, implementation-led strategy allowed TCP/IP to become the most pervasive networking model in existence.
-
-
 
 > [!vocab] Provenance
 > the place of origin or earliest known history of something.
@@ -894,3 +895,135 @@ Always verify your configuration with these authoritative commands:
 ### Summary of Security Hierarchy
 
 Effective switch hardening follows a logical hierarchy: establish **physical console security** with local users, enforce **encrypted remote access** via SSHv2, and ensure **network reachability** using a properly configured SVI and default gateway. Adhering to these standards ensures your infrastructure is both resilient and manageable.
+
+# Chapter 7 : Configuring and Verifying Cisco Switch Interfaces
+
+## 1. Fundamentals of IEEE Autonegotiation and Physical Signaling
+
+In modern Ethernet ecosystems, automated link negotiation is a strategic necessity for maintaining baseline connectivity across heterogeneous hardware. Whether connecting a legacy 10 Mbps device or a contemporary 1000 Mbps server, autonegotiation provides a standardized mechanism for link partners to agree on the highest performing operational parameters without manual intervention. This process ensures that the physical layer initializes with the optimal balance of speed and duplex supported by both endpoints.
+
+This mechanism relies on **Fast Link Pulses (FLPs)**. These are a series of out-of-band electrical signals transmitted between devices before a physical layer standard (like 100BASE-TX) is even established for data transmission. Because FLPs operate independently of actual frame transmission, they allow devices to declare their capabilities—such as supported speeds and duplex modes—to their link partner even while the link is technically "down."
+
+### Autonegotiation Rules
+
+When both nodes on a link participate in IEEE autonegotiation, they follow a hierarchical logic to determine the operational state:
+
+- **Capability Exchange:** Each device utilizes FLPs to declare all supported speed/duplex combinations (e.g., 10/100/1000 Mbps and Half/Full Duplex).
+- **Speed Determination:** Both devices identify and select the highest common speed supported by both ends.
+- **Duplex Determination:** Full duplex is prioritized as the preferred option. If both devices support full duplex at the negotiated speed, it is selected over half duplex.
+
+### Parallel Detection Logic
+
+If one node does not support autonegotiation (or has it manually disabled), the negotiating partner employs "Parallel Detection." The device senses the incoming electrical signals to identify the physical layer speed standard being used. However, because it receives no FLPs to negotiate duplex capabilities, the device must rely on a default table.
+
+|   |   |   |   |
+|---|---|---|---|
+|Sensed Speed|Speed Result|Default Duplex|Logic Note|
+|10 Mbps|10 Mbps|**Half Duplex**|Default choice due to absence of FLP negotiation.|
+|100 Mbps|100 Mbps|**Half Duplex**|Default choice due to absence of FLP negotiation.|
+|1000 Mbps+|1000 Mbps+|**Full Duplex**|Defaulted to Full (IEEE standard for 1Gbps+).|
+
+While these automated mechanisms provide a robust foundation for connectivity, network architects often require manual administrative control to ensure absolute consistency across critical infrastructure links.
+
+--------------------------------------------------------------------------------
+
+## 2. Manual Interface Configuration and Administrative Management
+
+The transition from automation to manual control involves significant operational trade-offs. While manual configuration offers predictability, it demands strict consistency; if you disable autonegotiation on one side, you must manually match those settings on the link partner. Failure to do so often results in duplex mismatches, which are performance-degrading "silent killers" of network throughput.
+
+### Manual Speed and Duplex Configuration
+
+To override the default autonegotiation behavior, use the following interface configuration syntax:
+
+```bash
+SW1# configure terminal
+SW1(config)# interface gigabitEthernet 1/0/1
+SW1(config-if)# speed {10 | 100 | 1000 | auto}
+SW1(config-if)# duplex {auto | full | half}
+```
+
+**Instructor’s Technical Note: PoE vs. Non-PoE Behavior** As an architect, you must be aware of hardware-specific nuances. In many Cisco Catalyst switches, configuring both a specific speed and duplex manually will disable autonegotiation on non-PoE ports. However, experimental data and field experience indicate that ports supporting Power over Ethernet (PoE) often do **not** disable autonegotiation even when these parameters are set manually. Always verify the resulting state with `show interfaces status`.
+
+### Efficiency and Documentation
+
+Effective management requires documentation and efficient command application:
+
+- **Description:** The `description` command allows for approximately 200 characters to identify the link (e.g., `description Link to Core-Switch-02`).
+- **Interface Range:** The `interface range` command (e.g., `interface range g1/0/2 - 10`) allows you to apply subcommands to multiple ports simultaneously. Note that while the `range` command itself does not appear in the running configuration, the subcommands are expanded and applied to every individual interface in that range.
+
+### Administrative State and Reversion
+
+- **Shutdown/No Shutdown:** The `shutdown` command places an interface in an "administratively down" state (software disabled), whereas a physical failure results in a "down/down" (notconnect) status.
+- **Reversion:** To reset a specific parameter, use the `no` prefix (e.g., `no speed`). To revert an entire port to factory defaults, use the global command `default interface [interface-id]`.
+
+Once administrative settings are confirmed, modern switches offer additional physical-layer automation to handle cabling discrepancies.
+
+--------------------------------------------------------------------------------
+
+## 3. Automating Cable Compatibility with Auto-MDIX
+
+Historically, Ethernet deployments required strict adherence to cable types: straight-through cables for dissimilar devices (Switch-to-Host) and crossover cables for similar devices (Switch-to-Switch). A mismatch would result in a complete failure of the physical link as the transmit and receive pairs would not align.
+
+**Auto-MDIX (Automatic Medium-Dependent Interface Crossover)** allows the switch interface electronics to automatically detect incorrect pinouts and swap the internal wire pairs to establish connectivity.
+
+**Prerequisites for Auto-MDIX:**
+
+- **Autonegotiation Mandate:** For Auto-MDIX to function, autonegotiation must be enabled on the interface. This is because Auto-MDIX relies on the same underlying signaling logic and timing used during the negotiation process to determine if a pair swap is necessary.
+- **Commands:** On most modern Catalyst switches, this is enabled by default (`mdix auto`). It can be disabled using `no mdix auto`.
+
+While Auto-MDIX solves physical cabling issues, verification of the operational state remains the final safeguard for a healthy link.
+
+--------------------------------------------------------------------------------
+
+## 4. Interface Verification and Operational Status Interpretation
+
+A "Connected" status is a necessary starting point, but it is not a guarantee of a healthy link. Layer 2 errors or configuration mismatches can exist even on a link that is physically active.
+
+### Interface Status Mapping (Table 7-2)
+
+Cisco IOS uses specific status codes to indicate the health of the interface.
+
+| Line Status           | Protocol Status     | Interface Status | Typical Root Cause                                       |
+| --------------------- | ------------------- | ---------------- | -------------------------------------------------------- |
+| administratively down | down                | **disabled**     | The `shutdown` command is configured.                    |
+| down                  | down                | **notconnect**   | Missing/bad cable; speed mismatch; neighbor is off/shut. |
+| up                    | down                | **notconnect**   | **Not expected on LAN switch physical interfaces.**      |
+| down                  | down (err-disabled) | **err-disabled** | Port security or another feature has disabled the port.  |
+| up                    | up                  | **connected**    | The interface is operational.                            |
+
+### Interpreting Verification Commands
+
+- `**show interfaces status**`**:** Provides a high-level summary. Look for the **"a-" prefix** (e.g., `a-full`, `a-1000`). This prefix confirms the setting was learned via **autonegotiation**. Its absence indicates a manual override.
+- `**show interfaces [id]**`**:** Provides hardware-level statistics. This is the primary tool for identifying performance degradation.
+- `**show running-config interface [id]**`**:** Used to isolate specific configuration deviations that might not be obvious from status outputs.
+
+When a link shows "connected" but performance is poor, you must move into the analysis of interface error counters.
+
+--------------------------------------------------------------------------------
+
+## 5. Performance Analysis: Troubleshooting Duplex Mismatches and Interface Errors
+
+The most challenging interface issues are those where the link remains "Up/Up" but performance is crippled. This is the hallmark of the **Duplex Mismatch**—a "Silent Killer" that occurs when one side transmits at will while the other side follows CSMA/CD (Carrier Sense Multiple Access with Collision Detection) logic.
+
+### Diagnostic Interface Counters
+
+In the output of `show interfaces`, you must analyze the following counters:
+
+- **Input Errors:** A **total cumulative counter** of many underlying errors, including runts, giants, CRC, frame, overrun, and ignored counts.
+- **Runts:** Frames smaller than 64 bytes; typically caused by collisions.
+- **Giants:** Frames exceeding the maximum size (default 1518 bytes).
+- **CRC:** Frames that fail the Frame Check Sequence (FCS) math; often points to **physical cabling interference** (EMI) or damaged cables.
+- **Frame:** Frames with an illegal format (e.g., ending in a partial byte).
+- **Output Errors:** Total frames the port attempted to send but failed due to an internal error.
+- **Collisions:** Normal increments on a half-duplex link; not necessarily an error unless excessive.
+- **Late Collisions:** Collisions occurring after the **64th byte** of the frame has been transmitted.
+
+### Troubleshooting Best Practices
+
+To isolate the root cause of performance issues, follow these diagnostic paths:
+
+1. **Check for Late Collisions:** If the **Late Collisions** counter is incrementing on a half-duplex interface, it is a definitive diagnostic indicator of a **Duplex Mismatch**. The full-duplex neighbor is sending data after the 64-byte window has closed.
+2. **Check for CRC vs. Collisions:** If **CRC errors** are growing steadily but **collisions** are not, the issue is likely **Physical/Cabling interference** or a damaged cable rather than a logical mismatch.
+3. **The Autonegotiation Mandate:** Unless there is a documented engineering requirement to the contrary, always utilize autonegotiation on both ends of the link to ensure maximum stability and performance.
+
+_**Final Summary:**_ _Late Collisions = Duplex Mismatch. CRC but NO Collisions = Cable/EMI Issues._
